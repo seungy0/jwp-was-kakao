@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,60 +31,48 @@ public class RequestHandler implements Runnable {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-            String line = reader.readLine();
-            if (line == null) {
+
+            List<String> line = readRequest(reader);
+            HttpRequest httpRequest = new HttpRequest(line);
+
+            if (httpRequest.isMethod("GET") && responseResources(httpRequest.getPath(), out)) {
                 return;
             }
 
-            String[] tokens = line.split(" ");
-            if (tokens.length < 2) {
+            if (httpRequest.isMethod("GET")) {
+                GetRequestHandler.getHandler(httpRequest, out);
                 return;
             }
 
-            String method = tokens[0];
-            String path = tokens[1];
+            System.out.println("Request : " + line);
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
+    }
 
-            File file = new File(
-                "./src/main/resources" + (path.endsWith(".html") ? "/templates" : "/static")
-                    + path);
+    private boolean responseResources(String path, OutputStream out) throws IOException {
+        File file = new File(
+            "./src/main/resources" + (path.endsWith(".html") || path.endsWith("favicon.ico")
+                ? "/templates" : "/static")
+                + path);
 
-            if (!file.exists()) {
-                sendResponse(out, "404 Not Found", "text/html;charset=utf-8");
-                return;
-            }
-
+        if (file.exists()) {
             byte[] body = Files.readAllBytes(file.toPath());
             String contentType = Files.probeContentType(file.toPath());
             sendResponse(out, body, contentType);
-        } catch (IOException e) {
-            logger.error(e.getMessage());
+            return true;
         }
+        return false;
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent,
-        String contentType) {
-        try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: " + contentType + "\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            logger.error(e.getMessage());
+    private static List<String> readRequest(BufferedReader reader) throws IOException {
+        List<String> line = new ArrayList<>();
+        String readLine = reader.readLine();
+        while (readLine != null && !readLine.isEmpty()) {
+            line.add(readLine);
+            readLine = reader.readLine();
         }
-    }
-
-    private void responseBody(DataOutputStream dos, byte[] body) {
-        try {
-            dos.write(body, 0, body.length);
-            dos.flush();
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-        }
-    }
-
-    private void sendResponse(OutputStream out, String body, String contentType)
-        throws IOException {
-        sendResponse(out, body.getBytes(), contentType);
+        return line;
     }
 
     private void sendResponse(OutputStream out, byte[] body, String contentType)
