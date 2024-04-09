@@ -64,7 +64,10 @@ public class RequestHandler implements Runnable {
         if (file.exists()) {
             byte[] body = Files.readAllBytes(file.toPath());
             String contentType = Files.probeContentType(file.toPath());
-            HttpResponse.sendResponse(out, body, contentType);
+            HttpResponse httpResponse = new HttpResponse("200", "OK",
+                Map.of("Content-Type", contentType != null ? contentType : "null"),
+                body);
+            httpResponse.sendResponse(out);
             return true;
         }
         return false;

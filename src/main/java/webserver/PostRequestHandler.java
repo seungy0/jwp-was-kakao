@@ -15,10 +15,14 @@ public class PostRequestHandler {
     public static void handler(HttpRequest httpRequest, OutputStream out) throws IOException {
         if (httpRequest.getPath().equals("/user/create")) {
             createUser(httpRequest.getForm());
+            HttpResponse httpResponse = new HttpResponse("302", "Found",
+                Map.of("Location", "/index.html"), null);
+            httpResponse.sendResponse(out);
             return;
         }
 
-        HttpResponse.sendResponse(out, "404 Not Found".getBytes(), "text/html;charset=utf-8");
+        HttpResponse httpResponse = new HttpResponse("404", "Not Found", null, null);
+        httpResponse.sendResponse(out);
         DataBase.findAll().stream()
             .map(User::toString)
             .forEach(logger::info);

@@ -18,8 +18,8 @@ public class GetRequestHandler {
             return;
         }
 
-        // api handler
-        HttpResponse.sendResponse(out, "404 Not Found".getBytes(), "text/html;charset=utf-8");
+        HttpResponse httpResponse = new HttpResponse("404", "Not Found", null, null);
+        httpResponse.sendResponse(out);
         DataBase.findAll().stream()
             .map(User::toString)
             .forEach(logger::info);
