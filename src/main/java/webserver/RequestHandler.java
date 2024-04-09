@@ -1,7 +1,6 @@
 package webserver;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,10 +8,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.IOUtils;
 
 public class RequestHandler implements Runnable {
 
@@ -32,8 +31,11 @@ public class RequestHandler implements Runnable {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
-            List<String> line = readRequest(reader);
-            HttpRequest httpRequest = new HttpRequest(line);
+            String requestLine = IOUtils.readRequestLine(reader);
+            Map<String, String> headers = IOUtils.readHeader(reader);
+            String body = IOUtils.readData(reader, Integer.parseInt(
+                headers.get("Content-Length") != null ? headers.get("Content-Length") : "0"));
+            HttpRequest httpRequest = new HttpRequest(requestLine, headers, body);
 
             if (httpRequest.isMethod("GET") && responseResources(httpRequest.getPath(), out)) {
                 return;
@@ -43,8 +45,11 @@ public class RequestHandler implements Runnable {
                 GetRequestHandler.getHandler(httpRequest, out);
                 return;
             }
+            if (httpRequest.isMethod("POST")) {
+                PostRequestHandler.handler(httpRequest, out);
+            }
 
-            System.out.println("Request : " + line);
+            System.out.println("Request : " + requestLine);
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
@@ -59,30 +64,9 @@ public class RequestHandler implements Runnable {
         if (file.exists()) {
             byte[] body = Files.readAllBytes(file.toPath());
             String contentType = Files.probeContentType(file.toPath());
-            sendResponse(out, body, contentType);
+            HttpResponse.sendResponse(out, body, contentType);
             return true;
         }
         return false;
-    }
-
-    private static List<String> readRequest(BufferedReader reader) throws IOException {
-        List<String> line = new ArrayList<>();
-        String readLine = reader.readLine();
-        while (readLine != null && !readLine.isEmpty()) {
-            line.add(readLine);
-            readLine = reader.readLine();
-        }
-        return line;
-    }
-
-    private void sendResponse(OutputStream out, byte[] body, String contentType)
-        throws IOException {
-        DataOutputStream dos = new DataOutputStream(out);
-        dos.writeBytes("HTTP/1.1 " + (body.length == 0 ? "404 Not Found" : "200 OK") + " \r\n");
-        dos.writeBytes("Content-Type: " + contentType + "\r\n");
-        dos.writeBytes("Content-Length: " + body.length + "\r\n");
-        dos.writeBytes("\r\n");
-        dos.write(body, 0, body.length);
-        dos.flush();
     }
 }
