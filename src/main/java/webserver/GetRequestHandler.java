@@ -1,33 +1,53 @@
 package webserver;
 
-import db.DataBase;
+import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.Map;
-import model.User;
+import java.util.Optional;
+
+import webserver.http.HttpHeaders;
+import webserver.http.HttpStatus;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GetRequestHandler {
+public class GetRequestHandler implements MethodRequestHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GetRequestHandler.class);
 
-    public static void getHandler(HttpRequest httpRequest, OutputStream out) throws IOException {
-        if (httpRequest.getPath().equals("/user/create")) {
-            createUser(httpRequest.getQuery());
-            return;
+    @Override
+    public Optional<HttpResponse> handler(HttpRequest httpRequest) throws IOException {
+        // TODO: 요청 URL에 따라 적절한 처리를 하는 부분
+        Optional<HttpResponse> response = responseResources(httpRequest.getPath());
+        if (response.isPresent()) {
+            return response;
         }
-
-        HttpResponse httpResponse = new HttpResponse("404", "Not Found", null, null);
-        httpResponse.sendResponse(out);
-        DataBase.findAll().stream()
-            .map(User::toString)
-            .forEach(logger::info);
+        return responseGetApi(httpRequest);
     }
 
-    private static void createUser(Map<String, String> querys) {
-        DataBase.addUser(
-            new User(querys.get("userId"), querys.get("password"), querys.get("name"),
-                querys.get("email")));
+    private static Optional<HttpResponse> responseGetApi(HttpRequest httpRequest) {
+        // TODO: GET 방식의 요청 URL에 따라 적절한 처리를 하는 부분
+        return Optional.empty();
+    }
+
+    private static Optional<HttpResponse> responseResources(String path) throws IOException {
+        if (path.equals("/")) {
+            path = "/index.html";
+        }
+        File file = new File(
+            "./src/main/resources" + (path.endsWith(".html") || path.endsWith("favicon.ico")
+                ? "/templates" : "/static")
+                + path);
+
+        if (file.exists()) {
+            byte[] body = Files.readAllBytes(file.toPath());
+            String contentType = Files.probeContentType(file.toPath());
+            HttpResponse httpResponse = new HttpResponse(HttpStatus.OK,
+                Map.of(HttpHeaders.CONTENT_TYPE, contentType != null ? contentType : "null"),
+                body);
+            return Optional.of(httpResponse);
+        }
+        return Optional.empty();
     }
 }
