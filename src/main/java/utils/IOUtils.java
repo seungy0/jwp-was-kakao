@@ -20,30 +20,4 @@ public class IOUtils {
         br.read(body, 0, contentLength);
         return String.copyValueOf(body);
     }
-
-    public static String readRequestLine(BufferedReader reader) throws IOException {
-        return reader.readLine();
-    }
-
-    public static Map<String, String> readHeader(BufferedReader reader) throws IOException {
-        List<String> lines = new ArrayList<>();
-        String line;
-
-        while (!(line = reader.readLine()).isEmpty()) {
-            lines.add(line);
-        }
-
-        return parseHeaders(lines);
-    }
-
-    private static Map<String, String> parseHeaders(List<String> lines) {
-        Map<String, String> headers = new HashMap<>();
-
-        for (String line : lines) {
-            String[] tokens = line.split(": ");
-            headers.put(tokens[0], tokens[1]);
-        }
-
-        return headers;
-    }
 }

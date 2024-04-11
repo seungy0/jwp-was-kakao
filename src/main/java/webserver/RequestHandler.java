@@ -1,16 +1,23 @@
 package webserver;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import webserver.http.HttpHeaders;
+import webserver.http.HttpMethods;
+import webserver.http.HttpStatus;
 import utils.IOUtils;
 
 public class RequestHandler implements Runnable {
@@ -31,23 +38,22 @@ public class RequestHandler implements Runnable {
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
-            String requestLine = IOUtils.readRequestLine(reader);
-            Map<String, String> headers = IOUtils.readHeader(reader);
+            String requestLine = readRequestLine(reader);
+            Map<String, String> headers = readHeader(reader);
             String body = IOUtils.readData(reader, Integer.parseInt(
-                headers.get("Content-Length") != null ? headers.get("Content-Length") : "0"));
+                headers.get(HttpHeaders.CONTENT_LENGTH) != null ? headers.get(HttpHeaders.CONTENT_LENGTH) : "0"));
             HttpRequest httpRequest = new HttpRequest(requestLine, headers, body);
 
-            if (httpRequest.isMethod("GET") && responseResources(httpRequest.getPath(), out)) {
-                return;
-            }
+            HttpResponse http404Response = new HttpResponse(HttpStatus.NOT_FOUND, null, null);
 
-            if (httpRequest.isMethod("GET")) {
-                GetRequestHandler.getHandler(httpRequest, out);
-                return;
-            }
-            if (httpRequest.isMethod("POST")) {
-                PostRequestHandler.handler(httpRequest, out);
-            }
+            Map<String, MethodRequestHandler> handlers = new HashMap<>();
+            handlers.put(HttpMethods.GET, new GetRequestHandler());
+            handlers.put(HttpMethods.POST, new PostRequestHandler());
+
+            handlers.get(httpRequest.getMethod())
+                .handler(httpRequest)
+                .orElse(http404Response)
+                .sendResponse(out);
 
             System.out.println("Request : " + requestLine);
         } catch (IOException e) {
@@ -55,21 +61,19 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    private boolean responseResources(String path, OutputStream out) throws IOException {
-        File file = new File(
-            "./src/main/resources" + (path.endsWith(".html") || path.endsWith("favicon.ico")
-                ? "/templates" : "/static")
-                + path);
+    private String readRequestLine(BufferedReader reader) throws IOException {
+        return reader.readLine();
+    }
 
-        if (file.exists()) {
-            byte[] body = Files.readAllBytes(file.toPath());
-            String contentType = Files.probeContentType(file.toPath());
-            HttpResponse httpResponse = new HttpResponse("200", "OK",
-                Map.of("Content-Type", contentType != null ? contentType : "null"),
-                body);
-            httpResponse.sendResponse(out);
-            return true;
+    private Map<String, String> readHeader(BufferedReader reader) throws IOException {
+        Map<String, String> headers = new HashMap<>();
+        String line;
+
+        while (!(line = reader.readLine()).isEmpty()) {
+            String[] tokens = line.split(": ");
+            headers.put(tokens[0], tokens[1]);
         }
-        return false;
+
+        return headers;
     }
 }

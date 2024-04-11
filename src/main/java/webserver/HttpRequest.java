@@ -59,4 +59,8 @@ public class HttpRequest {
         }
         return map;
     }
+
+    public String getMethod() {
+        return method;
+    }
 }
