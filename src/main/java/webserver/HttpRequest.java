@@ -8,7 +8,7 @@ public class HttpRequest {
     private final String method;
     private final String path;
     private final Map<String, String> header;
-    private final Map<String, String> query;
+    private final Map<String, String> queryParam;
     private final String body;
     private final Map<String, String> form;
 
@@ -21,7 +21,7 @@ public class HttpRequest {
         String[] pathToken = tokens[1].split("\\?");
         this.path = pathToken[0];
         this.header = header;
-        this.query = pathToken.length > 1 ? parseQueryString(pathToken[1]) : new HashMap<>();
+        this.queryParam = pathToken.length > 1 ? parseQueryString(pathToken[1]) : new HashMap<>();
         this.body = body;
         this.form = parseForm();
     }
@@ -39,7 +39,7 @@ public class HttpRequest {
     }
 
     public Map<String, String> getQuery() {
-        return query;
+        return queryParam;
     }
 
     private Map<String, String> parseQueryString(String query) {
