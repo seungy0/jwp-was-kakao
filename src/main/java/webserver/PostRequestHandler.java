@@ -4,12 +4,11 @@ import db.DataBase;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-
-import webserver.http.HttpHeaders;
-import webserver.http.HttpStatus;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import webserver.http.HttpHeaders;
+import webserver.http.HttpStatus;
 
 public class PostRequestHandler implements MethodRequestHandler {
 
