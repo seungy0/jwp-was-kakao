@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class HttpRequest {
@@ -61,13 +62,13 @@ public class HttpRequest {
         String[] tokens = input.split(delimiter);
         Map<String, String> map = new HashMap<>();
         for (String token : tokens) {
-            List<String> keyValue = Arrays.stream(token.split("="))
+            List<String> keyValue = Arrays.stream(token.split("=", 2))
                 .map(String::trim)
                 .collect(Collectors.toList());
-            if (keyValue.size() <= 1) {
-                continue;
-            }
-            map.put(keyValue.get(0), keyValue.get(1));
+
+            Optional.of(keyValue)
+                .filter(k -> k.size() > 1)
+                .ifPresent(k -> map.put(k.get(0), k.get(1)));
         }
         return map;
     }
