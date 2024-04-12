@@ -64,7 +64,10 @@ public class HttpRequest {
             List<String> keyValue = Arrays.stream(token.split("="))
                 .map(String::trim)
                 .collect(Collectors.toList());
-            map.put(keyValue.get(0), keyValue.size() > 1 ? keyValue.get(1) : "");
+            if (keyValue.size() <= 1) {
+                continue;
+            }
+            map.put(keyValue.get(0), keyValue.get(1));
         }
         return map;
     }
