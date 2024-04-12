@@ -15,8 +15,7 @@ public class GetRequestHandler implements MethodRequestHandler {
     private static final Logger logger = LoggerFactory.getLogger(GetRequestHandler.class);
 
     @Override
-    public Optional<HttpResponse> handler(HttpRequest httpRequest) throws IOException {
-        // TODO: 요청 URL에 따라 적절한 처리를 하는 부분
+    public Optional<HttpResponse> handle(HttpRequest httpRequest) throws IOException {
         Optional<HttpResponse> response = responseResources(httpRequest.getPath());
         if (response.isPresent()) {
             return response;

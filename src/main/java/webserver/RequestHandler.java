@@ -1,6 +1,7 @@
 package webserver;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -18,8 +19,13 @@ import webserver.http.HttpStatus;
 public class RequestHandler implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
-
+    private static final Map<String, MethodRequestHandler> handlers = new HashMap<>();
     private final Socket connection;
+
+    static {
+        handlers.put(HttpMethods.GET, new GetRequestHandler());
+        handlers.put(HttpMethods.POST, new PostRequestHandler());
+    }
 
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
@@ -40,18 +46,11 @@ public class RequestHandler implements Runnable {
                     HttpHeaders.CONTENT_LENGTH) : "0"));
             HttpRequest httpRequest = new HttpRequest(requestLine, headers, body);
 
-            HttpResponse http404Response = new HttpResponse(HttpStatus.NOT_FOUND, null, null);
+            HttpResponse response = handlers.get(httpRequest.getMethod())
+                .handle(httpRequest)
+                .orElse(new HttpResponse(HttpStatus.NOT_FOUND, null, null));
 
-            Map<String, MethodRequestHandler> handlers = new HashMap<>();
-            handlers.put(HttpMethods.GET, new GetRequestHandler());
-            handlers.put(HttpMethods.POST, new PostRequestHandler());
-
-            handlers.get(httpRequest.getMethod())
-                .handler(httpRequest)
-                .orElse(http404Response)
-                .sendResponse(out);
-
-            System.out.println("Request : " + requestLine);
+            sendResponse(response, out);
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
@@ -71,5 +70,26 @@ public class RequestHandler implements Runnable {
         }
 
         return headers;
+    }
+
+    public void sendResponse(HttpResponse response, OutputStream out)
+        throws IOException {
+        try (DataOutputStream dos = new DataOutputStream(out)) {
+            dos.writeBytes(HttpStatus.HTTP_VERSION + " " + response.getCode() + " " + response.getStatus() + " \r\n");
+
+            response.getHeaders().forEach((key, value) -> {
+                try {
+                    dos.writeBytes(key + ": " + value + "\r\n");
+                } catch (IOException e) {
+                    logger.error(e.getMessage());
+                }
+            });
+            byte[] body = response.getBody();
+            if (body != null && body.length != 0) {
+                dos.writeBytes("\r\n");
+                dos.write(body, 0, body.length);
+            }
+            dos.flush();
+        }
     }
 }

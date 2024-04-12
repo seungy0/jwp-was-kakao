@@ -15,7 +15,7 @@ public class PostRequestHandler implements MethodRequestHandler {
     private static final Logger logger = LoggerFactory.getLogger(GetRequestHandler.class);
 
     @Override
-    public Optional<HttpResponse> handler(HttpRequest httpRequest) throws IOException {
+    public Optional<HttpResponse> handle(HttpRequest httpRequest) throws IOException {
         if (httpRequest.getPath().equals("/user/create")) {
             createUser(httpRequest.getForm());
             HttpResponse httpResponse = new HttpResponse(HttpStatus.REDIRECT,

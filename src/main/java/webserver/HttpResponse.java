@@ -24,23 +24,19 @@ public class HttpResponse {
         this.body = body;
     }
 
-    public void sendResponse(OutputStream out)
-        throws IOException {
-        try (DataOutputStream dos = new DataOutputStream(out)) {
-            dos.writeBytes(HttpStatus.HTTP_VERSION + " " + code + " " + status + " \r\n");
+    public String getCode() {
+        return code;
+    }
 
-            headers.forEach((key, value) -> {
-                try {
-                    dos.writeBytes(key + ": " + value + "\r\n");
-                } catch (IOException e) {
-                    logger.error(e.getMessage());
-                }
-            });
-            if (body != null && body.length != 0) {
-                dos.writeBytes("\r\n");
-                dos.write(body, 0, body.length);
-            }
-            dos.flush();
-        }
+    public String getStatus() {
+        return status;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public byte[] getBody() {
+        return body;
     }
 }
