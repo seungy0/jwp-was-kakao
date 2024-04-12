@@ -6,19 +6,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import utils.IOUtils;
 import webserver.http.HttpHeaders;
 import webserver.http.HttpMethods;
 import webserver.http.HttpStatus;
-import utils.IOUtils;
 
 public class RequestHandler implements Runnable {
 
@@ -41,7 +36,8 @@ public class RequestHandler implements Runnable {
             String requestLine = readRequestLine(reader);
             Map<String, String> headers = readHeader(reader);
             String body = IOUtils.readData(reader, Integer.parseInt(
-                headers.get(HttpHeaders.CONTENT_LENGTH) != null ? headers.get(HttpHeaders.CONTENT_LENGTH) : "0"));
+                headers.get(HttpHeaders.CONTENT_LENGTH) != null ? headers.get(
+                    HttpHeaders.CONTENT_LENGTH) : "0"));
             HttpRequest httpRequest = new HttpRequest(requestLine, headers, body);
 
             HttpResponse http404Response = new HttpResponse(HttpStatus.NOT_FOUND, null, null);
@@ -69,7 +65,7 @@ public class RequestHandler implements Runnable {
         Map<String, String> headers = new HashMap<>();
         String line;
 
-        while (!(line = reader.readLine()).isEmpty()) {
+        while ((line = reader.readLine()) != null && !line.isEmpty()) {
             String[] tokens = line.split(": ");
             headers.put(tokens[0], tokens[1]);
         }
