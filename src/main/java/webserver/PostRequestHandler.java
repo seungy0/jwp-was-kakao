@@ -2,6 +2,8 @@ package webserver;
 
 import db.DataBase;
 import db.HttpCookie;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,7 +50,7 @@ public class PostRequestHandler implements MethodRequestHandler {
     private static void createUser(Map<String, String> querys) {
         DataBase.addUser(
             new User(querys.get("userId"), querys.get("password"), querys.get("name"),
-                querys.get("email")));
+                URLDecoder.decode(querys.get("email"), StandardCharsets.UTF_8)));
         logger.debug("User Create : {}", querys.get("userId"));
     }
 }

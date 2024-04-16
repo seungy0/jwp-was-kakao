@@ -1,18 +1,16 @@
 package webserver;
 
+import db.DataBase;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import utils.DynamicHtmlRenderer;
 import webserver.http.HttpHeaders;
 import webserver.http.HttpStatus;
 
 public class GetRequestHandler implements MethodRequestHandler {
-
-    private static final Logger logger = LoggerFactory.getLogger(GetRequestHandler.class);
 
     @Override
     public Optional<HttpResponse> handle(HttpRequest httpRequest) throws IOException {
@@ -23,8 +21,15 @@ public class GetRequestHandler implements MethodRequestHandler {
         return responseGetApi(httpRequest);
     }
 
-    private static Optional<HttpResponse> responseGetApi(HttpRequest httpRequest) {
-        // TODO: GET 방식의 요청 URL에 따라 적절한 처리를 하는 부분
+    private static Optional<HttpResponse> responseGetApi(HttpRequest httpRequest)
+        throws IOException {
+        if (httpRequest.getPath().equals("/user/list")) {
+            String renderedUserList = DynamicHtmlRenderer.renderUserList("user/list",
+                DataBase.findAll());
+            return Optional.of(new HttpResponse(HttpStatus.OK,
+                Map.of(HttpHeaders.CONTENT_TYPE, "text/html;charset=utf-8"),
+                renderedUserList.getBytes()));
+        }
         return Optional.empty();
     }
 
