@@ -50,6 +50,11 @@ public class HttpRequest {
         return method;
     }
 
+    public Optional<String> getSessionId() {
+        return Optional.ofNullable(header.get("Cookie"))
+            .map(cookie -> cookie.split("=")[1]);
+    }
+
     private Map<String, String> parseQueryString(String query) {
         return parseKeyValuePairs(query, "&");
     }

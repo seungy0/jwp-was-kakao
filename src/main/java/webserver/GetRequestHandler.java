@@ -1,6 +1,7 @@
 package webserver;
 
 import db.DataBase;
+import db.SessionStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,6 +31,17 @@ public class GetRequestHandler implements MethodRequestHandler {
                 Map.of(HttpHeaders.CONTENT_TYPE, "text/html;charset=utf-8"),
                 renderedUserList.getBytes()));
         }
+
+        if (httpRequest.getPath().equals(("/user/login"))) {
+            Optional<String> sessionId = httpRequest.getSessionId();
+            if (sessionId.isPresent() && SessionStore.getSession(sessionId.get()).isPresent()) {
+                return Optional.of(new HttpResponse(HttpStatus.REDIRECT,
+                    Map.of(HttpHeaders.LOCATION, "/index.html"), null));
+            } else {
+                File file = new File("./src/main/resources/templates/user/login.html");
+                return makeHttpResponseFromFile(file);
+            }
+        }
         return Optional.empty();
     }
 
@@ -43,13 +55,17 @@ public class GetRequestHandler implements MethodRequestHandler {
                 + path);
 
         if (file.exists()) {
-            byte[] body = Files.readAllBytes(file.toPath());
-            String contentType = Files.probeContentType(file.toPath());
-            HttpResponse httpResponse = new HttpResponse(HttpStatus.OK,
-                Map.of(HttpHeaders.CONTENT_TYPE, contentType != null ? contentType : "null"),
-                body);
-            return Optional.of(httpResponse);
+            return makeHttpResponseFromFile(file);
         }
         return Optional.empty();
+    }
+
+    private static Optional<HttpResponse> makeHttpResponseFromFile(File file) throws IOException {
+        byte[] body = Files.readAllBytes(file.toPath());
+        String contentType = Files.probeContentType(file.toPath());
+        HttpResponse httpResponse = new HttpResponse(HttpStatus.OK,
+            Map.of(HttpHeaders.CONTENT_TYPE, contentType != null ? contentType : "null"),
+            body);
+        return Optional.of(httpResponse);
     }
 }

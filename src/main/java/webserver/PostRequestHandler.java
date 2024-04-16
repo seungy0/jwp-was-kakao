@@ -1,7 +1,7 @@
 package webserver;
 
 import db.DataBase;
-import db.HttpCookie;
+import db.SessionStore;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -37,10 +37,11 @@ public class PostRequestHandler implements MethodRequestHandler {
 
     private static HttpResponse login(User user, Map<String, String> form) {
         if (user != null && user.getPassword().equals(form.get("password"))) {
-            HttpCookie.addCookie("JSESSIONID", UUID.randomUUID().toString());
+            String uuid = UUID.randomUUID().toString();
+            SessionStore.addSession(uuid, user);
             return new HttpResponse(HttpStatus.REDIRECT,
                 Map.of(HttpHeaders.LOCATION, "/index.html",
-                    HttpHeaders.SET_COOKIE, HttpCookie.getCookieString() + "; Path=/"),
+                    HttpHeaders.SET_COOKIE, "JSESSIONID=" + uuid + "; Path=/"),
                 null);
         }
         return new HttpResponse(HttpStatus.REDIRECT,
