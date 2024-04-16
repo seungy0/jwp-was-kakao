@@ -75,7 +75,9 @@ public class RequestHandler implements Runnable {
     public void sendResponse(HttpResponse response, OutputStream out)
         throws IOException {
         try (DataOutputStream dos = new DataOutputStream(out)) {
-            dos.writeBytes(HttpStatus.HTTP_VERSION + " " + response.getCode() + " " + response.getStatus() + " \r\n");
+            dos.writeBytes(
+                HttpStatus.HTTP_VERSION + " " + response.getCode() + " " + response.getStatus()
+                    + " \r\n");
 
             response.getHeaders().forEach((key, value) -> {
                 try {

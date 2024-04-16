@@ -1,8 +1,5 @@
 package webserver;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
