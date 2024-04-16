@@ -8,12 +8,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import model.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DynamicHtmlRenderer {
 
-    private static final Logger log = LoggerFactory.getLogger(DynamicHtmlRenderer.class);
     private static final Handlebars handlebars = new Handlebars(
         new ClassPathTemplateLoader("/templates", ".html"));
 
