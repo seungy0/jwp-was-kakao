@@ -22,27 +22,35 @@ public class GetRequestHandler implements MethodRequestHandler {
         return responseGetApi(httpRequest);
     }
 
-    private static Optional<HttpResponse> responseGetApi(HttpRequest httpRequest)
+    private Optional<HttpResponse> responseGetApi(HttpRequest httpRequest)
         throws IOException {
         if (httpRequest.getPath().equals("/user/list")) {
-            String renderedUserList = DynamicHtmlRenderer.renderUserList("user/list",
-                DataBase.findAll());
-            return Optional.of(new HttpResponse(HttpStatus.OK,
-                Map.of(HttpHeaders.CONTENT_TYPE, "text/html;charset=utf-8"),
-                renderedUserList.getBytes()));
+            return responseUserList();
         }
 
         if (httpRequest.getPath().equals(("/user/login"))) {
-            Optional<String> sessionId = httpRequest.getSessionId();
-            if (sessionId.isPresent() && SessionStore.getSession(sessionId.get()).isPresent()) {
-                return Optional.of(new HttpResponse(HttpStatus.REDIRECT,
-                    Map.of(HttpHeaders.LOCATION, "/index.html"), null));
-            } else {
-                File file = new File("./src/main/resources/templates/user/login.html");
-                return makeHttpResponseFromFile(file);
-            }
+            return responseUserLogin(httpRequest);
         }
         return Optional.empty();
+    }
+
+    private Optional<HttpResponse> responseUserList() throws IOException {
+        String renderedUserList = DynamicHtmlRenderer.renderUserList("user/list",
+            DataBase.findAll());
+        return Optional.of(new HttpResponse(HttpStatus.OK,
+            Map.of(HttpHeaders.CONTENT_TYPE, "text/html;charset=utf-8"),
+            renderedUserList.getBytes()));
+    }
+
+    private Optional<HttpResponse> responseUserLogin(HttpRequest httpRequest)
+        throws IOException {
+        Optional<String> sessionId = httpRequest.getSessionId();
+        if (sessionId.isPresent() && SessionStore.getSession(sessionId.get()).isPresent()) {
+            return Optional.of(new HttpResponse(HttpStatus.REDIRECT,
+                Map.of(HttpHeaders.LOCATION, "/index.html"), null));
+        }
+        File file = new File("./src/main/resources/templates/user/login.html");
+        return makeHttpResponseFromFile(file);
     }
 
     private static Optional<HttpResponse> responseResources(String path) throws IOException {

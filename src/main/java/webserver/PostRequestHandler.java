@@ -35,20 +35,24 @@ public class PostRequestHandler implements MethodRequestHandler {
         return Optional.empty();
     }
 
-    private static HttpResponse login(User user, Map<String, String> form) {
+    private HttpResponse login(User user, Map<String, String> form) {
         if (user != null && user.getPassword().equals(form.get("password"))) {
-            String uuid = UUID.randomUUID().toString();
-            SessionStore.addSession(uuid, user);
-            return new HttpResponse(HttpStatus.REDIRECT,
-                Map.of(HttpHeaders.LOCATION, "/index.html",
-                    HttpHeaders.SET_COOKIE, "JSESSIONID=" + uuid + "; Path=/"),
-                null);
+            return createSessionAndRedirect(user);
         }
         return new HttpResponse(HttpStatus.REDIRECT,
             Map.of(HttpHeaders.LOCATION, "/user/login_failed.html"), null);
     }
 
-    private static void createUser(Map<String, String> querys) {
+    private HttpResponse createSessionAndRedirect(User user) {
+        String uuid = UUID.randomUUID().toString();
+        SessionStore.addSession(uuid, user);
+        return new HttpResponse(HttpStatus.REDIRECT,
+            Map.of(HttpHeaders.LOCATION, "/index.html",
+                HttpHeaders.SET_COOKIE, "JSESSIONID=" + uuid + "; Path=/"),
+            null);
+    }
+
+    private void createUser(Map<String, String> querys) {
         DataBase.addUser(
             new User(querys.get("userId"), querys.get("password"), querys.get("name"),
                 URLDecoder.decode(querys.get("email"), StandardCharsets.UTF_8)));
