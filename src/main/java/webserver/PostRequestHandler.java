@@ -1,61 +1,54 @@
 package webserver;
 
-import db.DataBase;
-import db.SessionStore;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import domain.auth.AuthService;
+import domain.user.UserService;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import model.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import webserver.http.HttpHeaders;
 import webserver.http.HttpStatus;
 
 public class PostRequestHandler implements MethodRequestHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GetRequestHandler.class);
+    private final UserService userService;
+    private final AuthService authService;
+
+    public PostRequestHandler(UserService userService, AuthService authService) {
+        this.userService = userService;
+        this.authService = authService;
+    }
+
 
     @Override
     public Optional<HttpResponse> handle(HttpRequest httpRequest) {
         if (httpRequest.getPath().equals("/user/create")) {
-            createUser(httpRequest.getForm());
+            userService.createUser(httpRequest.getForm());
             HttpResponse httpResponse = new HttpResponse(HttpStatus.REDIRECT,
                 Map.of(HttpHeaders.LOCATION, "/index.html"), null);
             return Optional.of(httpResponse);
         }
 
         if (httpRequest.getPath().equals("/user/login")) {
-            Map<String, String> form = httpRequest.getForm();
-            User user = DataBase.findUserById(form.get("userId"));
-            return Optional.of(login(user, form));
+            return userLogin(httpRequest);
         }
 
         return Optional.empty();
     }
 
-    private HttpResponse login(User user, Map<String, String> form) {
-        if (user != null && user.getPassword().equals(form.get("password"))) {
-            return createSessionAndRedirect(user);
+    private Optional<HttpResponse> userLogin(HttpRequest httpRequest) {
+        Optional<User> user = userService.login(httpRequest.getForm());
+        if (user.isPresent()) {
+            String sessionId = authService.createSession(user.get());
+            return Optional.of(createSessionAndRedirect(sessionId));
         }
-        return new HttpResponse(HttpStatus.REDIRECT,
-            Map.of(HttpHeaders.LOCATION, "/user/login_failed.html"), null);
+        return Optional.of(new HttpResponse(HttpStatus.REDIRECT,
+            Map.of(HttpHeaders.LOCATION, "/user/login_failed.html"), null));
     }
 
-    private HttpResponse createSessionAndRedirect(User user) {
-        String uuid = UUID.randomUUID().toString();
-        SessionStore.addSession(uuid, user);
+    private HttpResponse createSessionAndRedirect(String sessionId) {
         return new HttpResponse(HttpStatus.REDIRECT,
             Map.of(HttpHeaders.LOCATION, "/index.html",
-                HttpHeaders.SET_COOKIE, "JSESSIONID=" + uuid + "; Path=/"),
+                HttpHeaders.SET_COOKIE, "JSESSIONID=" + sessionId + "; Path=/"),
             null);
-    }
-
-    private void createUser(Map<String, String> querys) {
-        DataBase.addUser(
-            new User(querys.get("userId"), querys.get("password"), querys.get("name"),
-                URLDecoder.decode(querys.get("email"), StandardCharsets.UTF_8)));
-        logger.debug("User Create : {}", querys.get("userId"));
     }
 }

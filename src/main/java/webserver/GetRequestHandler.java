@@ -1,7 +1,7 @@
 package webserver;
 
-import db.DataBase;
-import db.SessionStore;
+import domain.auth.AuthService;
+import domain.user.UserService;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,6 +12,15 @@ import webserver.http.HttpHeaders;
 import webserver.http.HttpStatus;
 
 public class GetRequestHandler implements MethodRequestHandler {
+
+    private final UserService userService;
+    private final AuthService authService;
+
+    public GetRequestHandler(UserService userService, AuthService authService) {
+        this.userService = userService;
+        this.authService = authService;
+    }
+
 
     @Override
     public Optional<HttpResponse> handle(HttpRequest httpRequest) throws IOException {
@@ -36,7 +45,7 @@ public class GetRequestHandler implements MethodRequestHandler {
 
     private Optional<HttpResponse> responseUserList() throws IOException {
         String renderedUserList = DynamicHtmlRenderer.renderUserList("user/list",
-            DataBase.findAll());
+            userService.getAllUsers());
         return Optional.of(new HttpResponse(HttpStatus.OK,
             Map.of(HttpHeaders.CONTENT_TYPE, "text/html;charset=utf-8"),
             renderedUserList.getBytes()));
@@ -44,10 +53,18 @@ public class GetRequestHandler implements MethodRequestHandler {
 
     private Optional<HttpResponse> responseUserLogin(HttpRequest httpRequest)
         throws IOException {
-        Optional<String> sessionId = httpRequest.getSessionId();
-        if (sessionId.isPresent() && SessionStore.getSession(sessionId.get()).isPresent()) {
-            return Optional.of(new HttpResponse(HttpStatus.REDIRECT,
-                Map.of(HttpHeaders.LOCATION, "/index.html"), null));
+//        Optional<String> sessionId = httpRequest.getSessionId();
+//        if (sessionId.isPresent() && SessionStore.getSession(sessionId.get()).isPresent()) {
+//            return Optional.of(new HttpResponse(HttpStatus.REDIRECT,
+//                Map.of(HttpHeaders.LOCATION, "/index.html"), null));
+//        }
+//        File file = new File("./src/main/resources/templates/user/login.html");
+//        return makeHttpResponseFromFile(file);
+
+        if (authService.isUserLoggedIn(httpRequest.getSessionId())) {
+            return Optional.of(
+                new HttpResponse(HttpStatus.REDIRECT, Map.of(HttpHeaders.LOCATION, "/index.html"),
+                    null));
         }
         File file = new File("./src/main/resources/templates/user/login.html");
         return makeHttpResponseFromFile(file);

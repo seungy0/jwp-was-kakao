@@ -1,5 +1,7 @@
 package webserver;
 
+import domain.auth.AuthService;
+import domain.user.UserService;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -23,8 +25,10 @@ public class RequestHandler implements Runnable {
     private final Socket connection;
 
     static {
-        handlers.put(HttpMethods.GET, new GetRequestHandler());
-        handlers.put(HttpMethods.POST, new PostRequestHandler());
+        UserService userService = new UserService();
+        AuthService authService = new AuthService();
+        handlers.put(HttpMethods.GET, new GetRequestHandler(userService, authService));
+        handlers.put(HttpMethods.POST, new PostRequestHandler(userService, authService));
     }
 
     public RequestHandler(Socket connectionSocket) {
