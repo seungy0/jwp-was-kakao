@@ -52,7 +52,12 @@ public class HttpRequest {
 
     public Optional<String> getSessionId() {
         return Optional.ofNullable(header.get("Cookie"))
-            .map(cookie -> cookie.split("=")[1]);
+            .flatMap(cookie -> Arrays.stream(cookie.split(";"))
+                .map(String::trim)
+                .filter(c -> c.startsWith("JSESSIONID"))
+                .map(c -> c.split("=")[1])
+                .findFirst());
+
     }
 
     private Map<String, String> parseQueryString(String query) {
