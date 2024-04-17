@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import utils.IOUtils;
-import webserver.http.HttpHeaders;
 import webserver.http.HttpMethods;
 import webserver.http.HttpStatus;
 
@@ -42,13 +40,7 @@ public class RequestHandler implements Runnable {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-
-            String requestLine = readRequestLine(reader);
-            Map<String, String> headers = readHeader(reader);
-            String body = IOUtils.readData(reader, Integer.parseInt(
-                headers.get(HttpHeaders.CONTENT_LENGTH) != null ? headers.get(
-                    HttpHeaders.CONTENT_LENGTH) : "0"));
-            HttpRequest httpRequest = new HttpRequest(requestLine, headers, body);
+            HttpRequest httpRequest = HttpRequest.from(reader);
 
             HttpResponse response = handlers.get(httpRequest.getMethod())
                 .handle(httpRequest)
@@ -58,22 +50,6 @@ public class RequestHandler implements Runnable {
         } catch (IOException e) {
             logger.error(e.getMessage());
         }
-    }
-
-    private String readRequestLine(BufferedReader reader) throws IOException {
-        return reader.readLine();
-    }
-
-    private Map<String, String> readHeader(BufferedReader reader) throws IOException {
-        Map<String, String> headers = new HashMap<>();
-        String line;
-
-        while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            String[] tokens = line.split(": ");
-            headers.put(tokens[0], tokens[1]);
-        }
-
-        return headers;
     }
 
     public void sendResponse(HttpResponse response, OutputStream out)

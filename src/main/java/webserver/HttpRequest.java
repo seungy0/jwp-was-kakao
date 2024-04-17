@@ -1,11 +1,15 @@
 package webserver;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import utils.IOUtils;
+import webserver.http.HttpHeaders;
 
 public class HttpRequest {
 
@@ -18,7 +22,16 @@ public class HttpRequest {
     private static final int METHOD_INDEX = 0;
     private static final int PATH_INDEX = 1;
 
-    public HttpRequest(String requestLine, Map<String, String> header, String body) {
+    public static HttpRequest from(BufferedReader reader) throws IOException {
+        String requestLine = readRequestLine(reader);
+        Map<String, String> headers = readHeader(reader);
+        String body = IOUtils.readData(reader, Integer.parseInt(
+            headers.get(HttpHeaders.CONTENT_LENGTH) != null ? headers.get(
+                HttpHeaders.CONTENT_LENGTH) : "0"));
+        return new HttpRequest(requestLine, headers, body);
+    }
+
+    private HttpRequest(String requestLine, Map<String, String> header, String body) {
         String[] tokens = requestLine.isEmpty() ? null : requestLine.split(" ");
         validateRequestLine(tokens);
         this.method = tokens[METHOD_INDEX];
@@ -87,5 +100,21 @@ public class HttpRequest {
         if (tokens == null || tokens.length < 2) {
             throw new IllegalArgumentException("Invalid request line");
         }
+    }
+
+    private static String readRequestLine(BufferedReader reader) throws IOException {
+        return reader.readLine();
+    }
+
+    private static Map<String, String> readHeader(BufferedReader reader) throws IOException {
+        Map<String, String> headers = new HashMap<>();
+        String line;
+
+        while ((line = reader.readLine()) != null && !line.isEmpty()) {
+            String[] tokens = line.split(": ");
+            headers.put(tokens[0], tokens[1]);
+        }
+
+        return headers;
     }
 }
